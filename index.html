@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todo V2.0 · 待办列表</title>
+</head>
+<body>
+  <main>
+    <h1>待办列表</h1>
+    <form id="todo-form">
+      <label for="todo-input">待办事项</label>
+      <input
+        id="todo-input"
+        type="text"
+        autocomplete="off"
+        aria-describedby="todo-feedback"
+      >
+      <button type="submit">添加</button>
+    </form>
+    <p id="todo-feedback" role="status"></p>
+    <ul id="todo-list"></ul>
+  </main>
+  <script src="./todo.js"></script>
+</body>
+</html>
