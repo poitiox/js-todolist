@@ -19,6 +19,12 @@
       <button type="submit">添加</button>
     </form>
     <p id="todo-feedback" role="status"></p>
+    <label for="todo-filter">筛选任务</label>
+    <select id="todo-filter">
+      <option value="all">全部</option>
+      <option value="active">未完成</option>
+      <option value="completed">已完成</option>
+    </select>
     <ul id="todo-list"></ul>
   </main>
   <script src="./todo.js"></script>
