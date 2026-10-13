@@ -6,6 +6,7 @@
   const todoList = document.querySelector("#todo-list");
   const feedback = document.querySelector("#todo-feedback");
   const todoFilter = document.querySelector("#todo-filter");
+  const clearCompletedButton = document.querySelector("#clear-completed");
 
   // 页面结构变化时明确失败，避免带着缺失的依赖继续初始化。
   if (!todoForm || !todoInput || !todoList || !feedback || !todoFilter) {
@@ -56,6 +57,7 @@
         throw new Error("本地待办数据格式不正确。");
       }
 
+      feedback.textContent = `已从本地恢复 ${restored.length} 项待办。`;
       return restored;
     } catch (error) {
       console.error("待办事项恢复失败：", error);
@@ -149,6 +151,11 @@
     filter = todoFilter.value;
     render();
   });
+
+  // 控制台也可执行清除，按钮缺失不应阻止恢复本地任务。
+  if (clearCompletedButton) {
+    clearCompletedButton.addEventListener("click", clearCompleted);
+  }
 
   // 练习要求从控制台调用，局部函数需要提供明确入口。
   window.clearCompleted = clearCompleted;
