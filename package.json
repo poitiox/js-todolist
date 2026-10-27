@@ -3,12 +3,18 @@
   "version": "2.0.0",
   "private": true,
   "description": "使用 TypeScript 严格类型的原生待办列表",
+  "engines": {
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && esbuild src/todo.ts --bundle --format=iife --platform=browser --target=es2022 --charset=utf8 --outfile=todo.js"
+    "typecheck": "tsc --noEmit && tsc --project tsconfig.test.json --noEmit",
+    "build": "npm run typecheck && esbuild src/todo.ts --bundle --format=iife --platform=browser --target=es2022 --charset=utf8 --outfile=todo.js",
+    "test": "vitest run --reporter=verbose"
   },
   "devDependencies": {
+    "@types/node": "26.6.5",
     "esbuild": "0.28.2",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
   }
 }
