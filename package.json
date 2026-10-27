@@ -1,0 +1,14 @@
+{
+  "name": "js-todolist",
+  "version": "2.0.0",
+  "private": true,
+  "description": "使用 TypeScript 严格类型的原生待办列表",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && esbuild src/todo.ts --bundle --format=iife --platform=browser --target=es2022 --charset=utf8 --outfile=todo.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}
