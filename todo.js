@@ -8,7 +8,7 @@
   const todoFilter = document.querySelector("#todo-filter");
   const clearCompletedButton = document.querySelector("#clear-completed");
 
-  // 页面结构变化时明确失败，避免带着缺失的依赖继续初始化。
+
   if (!todoForm || !todoInput || !todoList || !feedback || !todoFilter) {
     console.error("Todo 初始化失败：页面缺少表单、输入框、列表、提示区域或筛选器。");
     if (feedback) {
@@ -20,15 +20,15 @@
   const STORAGE_KEY = "todo-v2";
   let todos = loadTodos();
   let filter = "all";
-  // 从已恢复的任务继续编号，避免刷新后操作到多个同号任务。
-  let nextTodoId = todos.reduce((highest, todo) => Math.max(highest, todo.id), 0) + 1;
+
+  let lastTodoId = todos.reduce((highest, todo) => Math.max(highest, todo.id), 0);
 
   function saveTodos() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
       feedback.textContent = "待办事项已保存。";
     } catch (error) {
-      // 保存失败不应阻止当前页面使用，但必须说明刷新会丢失此次更改。
+
       console.error("待办事项保存失败：", error);
       feedback.textContent = "本地保存失败，当前更改仅在本页面有效，刷新后可能丢失。";
     }
@@ -40,7 +40,7 @@
       if (saved === null) return [];
 
       const restored = JSON.parse(saved);
-      // 本地记录也可能被手动修改，不能只判断 JSON 是否能解析。
+
       if (
         !Array.isArray(restored) ||
         !restored.every((todo) =>
@@ -73,13 +73,20 @@
       return false;
     }
 
-    todos = [...todos, { id: nextTodoId++, text: content, completed: false }];
+
+    do {
+      lastTodoId = lastTodoId === Number.MAX_SAFE_INTEGER ? 1 : lastTodoId + 1;
+    } while (todos.some((todo) => todo.id === lastTodoId));
+
+    todos = [...todos, { id: lastTodoId, text: content, completed: false }];
     saveTodos();
     render();
     return true;
   }
 
   function removeTodo(id) {
+
+    console.log("删除：任务", id);
     todos = todos.filter((todo) => todo.id !== id);
     saveTodos();
     render();
@@ -92,6 +99,7 @@
   }
 
   function toggleTodo(id) {
+    console.log("切换：任务", id);
     todos = todos.map((todo) =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
@@ -99,9 +107,30 @@
     render();
   }
 
+  function editTodo(id) {
+    const todo = todos.find((todo) => todo.id === id);
+    if (!todo) return;
+
+    const input = window.prompt("编辑待办事项", todo.text);
+    if (input === null) return;
+
+    const content = input.trim();
+    if (!content) {
+      feedback.textContent = "待办事项不能为空，已保留原内容。";
+      return;
+    }
+
+    console.log("编辑：任务", id);
+    todos = todos.map((todo) =>
+      todo.id === id ? { ...todo, text: content } : todo
+    );
+    saveTodos();
+    render();
+  }
+
   function render() {
     todoFilter.value = filter;
-    // 筛选只影响显示，不能把隐藏任务从完整数据中删除。
+
     const visibleTodos = todos.filter((todo) =>
       filter === "all" || (filter === "completed" ? todo.completed : !todo.completed)
     );
@@ -109,36 +138,75 @@
 
     for (const todo of visibleTodos) {
       const item = document.createElement("li");
-      const label = document.createElement("label");
+      item.dataset.id = String(todo.id);
+
+
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = todo.completed;
-      checkbox.addEventListener("change", () => toggleTodo(todo.id));
+      checkbox.setAttribute("aria-label", `切换完成状态：${todo.text}`);
 
       const text = document.createElement(todo.completed ? "s" : "span");
-      // 待办属于纯文本，用户输入不能作为 HTML 解释。
+
       text.textContent = todo.text;
-      label.append(checkbox, text);
+
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.dataset.action = "edit";
+      editButton.textContent = "编辑";
+      editButton.setAttribute("aria-label", `编辑待办：${todo.text}`);
 
       const removeButton = document.createElement("button");
       removeButton.type = "button";
-      removeButton.textContent = "删除";
+      removeButton.dataset.action = "delete";
       removeButton.setAttribute("aria-label", `删除待办：${todo.text}`);
-      removeButton.addEventListener("click", () => removeTodo(todo.id));
 
-      item.append(label, removeButton);
+      const removeText = document.createElement("span");
+      removeText.textContent = "删除";
+      removeButton.append(removeText);
+
+      item.append(checkbox, text, editButton, removeButton);
       todoList.append(item);
     }
 
     if (visibleTodos.length === 0) {
       const emptyItem = document.createElement("li");
-      emptyItem.textContent = filter === "all" ? "暂无待办事项。" : "当前筛选下暂无待办事项。";
+      emptyItem.textContent = filter === "all"
+        ? "暂无待办事项。"
+        : "当前筛选下暂无待办事项。";
       todoList.append(emptyItem);
     }
   }
 
+
+  todoList.addEventListener("click", (e) => {
+    if (!(e.target instanceof Element)) return;
+
+    const item = e.target.closest("li");
+    if (!item || !todoList.contains(item)) return;
+
+
+    const id = Number(item.dataset.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+    if (!todos.some((todo) => todo.id === id)) return;
+
+    const delBtn = e.target.closest('[data-action="delete"]');
+    if (delBtn && item.contains(delBtn)) {
+      removeTodo(id);
+      return;
+    }
+
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn && item.contains(editBtn)) {
+      editTodo(id);
+      return;
+    }
+
+    toggleTodo(id);
+  });
+
   todoForm.addEventListener("submit", (event) => {
-    // 列表在当前页面更新，不需要通过表单提交导航。
+
     event.preventDefault();
 
     if (addTodo(todoInput.value)) {
@@ -152,12 +220,12 @@
     render();
   });
 
-  // 控制台也可执行清除，按钮缺失不应阻止恢复本地任务。
+
   if (clearCompletedButton) {
     clearCompletedButton.addEventListener("click", clearCompleted);
   }
 
-  // 练习要求从控制台调用，局部函数需要提供明确入口。
+
   window.clearCompleted = clearCompleted;
   render();
 })();
