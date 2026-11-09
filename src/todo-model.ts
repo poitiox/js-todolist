@@ -4,7 +4,10 @@ export interface Todo {
   readonly completed: boolean;
 }
 
-export function addTodo(todos: readonly Todo[], text: unknown): readonly Todo[] {
+export function addTodo(
+  todos: readonly Todo[],
+  text: unknown,
+): readonly Todo[] {
   if (typeof text !== "string" || text.trim() === "") return todos;
 
   const ids = new Set(todos.map((todo) => todo.id));
@@ -16,12 +19,15 @@ export function addTodo(todos: readonly Todo[], text: unknown): readonly Todo[] 
   return [...todos, { id, text: text.trim(), completed: false }];
 }
 
-export function toggleTodo(todos: readonly Todo[], id: number): readonly Todo[] {
+export function toggleTodo(
+  todos: readonly Todo[],
+  id: number,
+): readonly Todo[] {
   if (!Number.isSafeInteger(id) || id <= 0) return todos;
   if (!todos.some((todo) => todo.id === id)) return todos;
 
   return todos.map((todo) =>
-    todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    todo.id === id ? { ...todo, completed: !todo.completed } : todo,
   );
 }
 
@@ -33,19 +39,23 @@ export function parseTodoId(value: string | undefined): number | null {
   return Number.isSafeInteger(id) ? id : null;
 }
 
+function isTodoId(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
 function isTodo(value: unknown): value is Todo {
-  return value !== null &&
+  return (
+    value !== null &&
     typeof value === "object" &&
     !Array.isArray(value) &&
     "id" in value &&
-    typeof value.id === "number" &&
-    Number.isSafeInteger(value.id) &&
-    value.id > 0 &&
+    isTodoId(value.id) &&
     "text" in value &&
     typeof value.text === "string" &&
     value.text.trim() !== "" &&
     "completed" in value &&
-    typeof value.completed === "boolean";
+    typeof value.completed === "boolean"
+  );
 }
 
 export function parseTodos(value: unknown): Todo[] {
@@ -63,7 +73,11 @@ export function parseTodos(value: unknown): Todo[] {
     }
     ids.add(entry.id);
     // 只恢复约定字段，避免把存储中的额外属性带入业务状态。
-    restored.push({ id: entry.id, text: entry.text, completed: entry.completed });
+    restored.push({
+      id: entry.id,
+      text: entry.text,
+      completed: entry.completed,
+    });
   }
 
   return restored;

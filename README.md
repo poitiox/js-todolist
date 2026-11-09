@@ -1,18 +1,31 @@
-# TypeScript 待办列表
+# V3.0 待办列表
 
-保留原有新增、编辑、删除、完成切换、筛选、清除已完成和本地保存功能。浏览器仍加载根目录的 `todo.js`，可直接打开 `index.html`。
+保留原有新增、编辑、删除、完成切换、筛选、清除已完成和本地保存功能。使用 Vite 加载 TypeScript 模块，并通过 ESLint、Prettier 和严格类型检查约束工程质量。
 
 ## 开发方式
 
-开发环境使用 Node.js 22.22.2 以上的 22 版本、24.15 以上的 24 版本或 26 及以上版本，满足 Vitest 与 jsdom 的共同要求；浏览器直接打开构建结果无需 Node.js。
+开发环境使用 Node.js 22.22.2 以上的 22 版本、24.15 以上的 24 版本或 26 及以上版本，以 `package.json` 为准。
 
 ```sh
-npm install
-npm run typecheck
-npm run build
+npm ci
+npm run dev
 ```
 
-修改 `src/` 中的 TypeScript 后重新构建，不直接修改自动生成的 `todo.js`。构建先执行严格类型检查，再打包为普通浏览器脚本，无需框架或开发服务器。
+通过终端显示的本地地址访问页面。检查与生产构建：
+
+```sh
+npm run typecheck
+npm run lint
+npm run format:check
+npm run build
+npm run preview
+```
+
+`index.html` 通过模块脚本加载 `src/todo.ts`。构建脚本固定为 `tsc --noEmit && vite build`，输出至 `dist/`；通过预览地址检查生产构建，不直接修改产物。当前没有额外配置需求，使用 Vite 默认配置。
+
+ESLint 10 通过 `eslint.config.cjs` 的 FlatCompat 读取课程指定的 `.eslintrc.cjs`，规则只维护一份。复杂度上限为 10，嵌套深度上限为 3，显式 `any` 为错误；三项均设为错误，`npm run lint` 另禁止告警。`npx eslint src/` 会扫描全部 TypeScript 业务源码。
+
+使用 `npm run format` 统一格式。Prettier 保留两空格、双引号、分号，格式检查不扫描生成文件。TypeScript 固定为 6.0.3，以满足当前 TypeScript ESLint 解析器的支持范围；`strict` 及全部原有严格选项保留。
 
 ## 手动执行测试
 
@@ -20,7 +33,7 @@ npm run build
 npm run test
 ```
 
-命令一次性运行测试并打印每个用例的结果，不进入监听模式。请保留含命令、用例结果和最终统计的终端截图，供作业结果文档使用；测试结束后按阶段手动提交。
+脚本固定为 `vitest run`，一次性运行测试，不进入监听模式。需要逐项输出时执行 `npm run test -- --reporter=verbose`。测试由用户手动执行，阶段完成后自行提交。
 
 基础测试直接调用真实业务函数，覆盖新增、首尾空白、连续编号、空白及非字符串输入、双向完成切换、连续切换、无对应任务和非法编号。成功操作同时检查原数据未被修改，失败操作检查列表内容与引用均不改变，不需要浏览器或存储 mock。
 
@@ -30,17 +43,20 @@ npm run test
 
 ## 文件职责
 
-| 文件 | 职责 |
-| --- | --- |
-| `index.html` | 页面结构和浏览器入口 |
-| `src/todo-model.ts` | 待办类型、新增、完成切换、编号与恢复数据校验 |
-| `src/todo.ts` | 页面事件、渲染和 localStorage 读写 |
-| `tests/todo-model.basic.test.ts` | 新增与完成切换的基础单测 |
-| `tests/todo-model.boundary.test.ts` | 编号、恢复数据和重复记录的边界单测 |
-| `tests/todo-app.test.ts` | 实际页面结构、存储异常与文本渲染回归 |
-| `todo.js` | 构建生成的浏览器脚本 |
-| `tsconfig.json` | 严格类型检查配置 |
-| `tsconfig.test.json` | 测试源码的类型检查配置 |
+| 文件                                | 职责                                         |
+| ----------------------------------- | -------------------------------------------- |
+| `index.html`                        | 页面结构和浏览器入口                         |
+| `src/todo-model.ts`                 | 待办类型、新增、完成切换、编号与恢复数据校验 |
+| `src/todo.ts`                       | 页面事件、渲染和 localStorage 读写           |
+| `tests/todo-model.basic.test.ts`    | 新增与完成切换的基础单测                     |
+| `tests/todo-model.boundary.test.ts` | 编号、恢复数据和重复记录的边界单测           |
+| `tests/todo-app.test.ts`            | 实际页面结构、存储异常与文本渲染回归         |
+| `dist/`                             | Vite 生成的生产页面与资源，不提交            |
+| `tsconfig.json`                     | 严格类型检查配置                             |
+| `tsconfig.test.json`                | 测试源码的类型检查配置                       |
+| `.eslintrc.cjs`                     | 课程要求的三条代码规则                       |
+| `eslint.config.cjs`                 | 当前 ESLint 的旧配置兼容入口                 |
+| `.prettierrc.json`                  | 统一格式规则                                 |
 
 ## 业务约束
 
@@ -50,8 +66,8 @@ npm run test
 - 页面编号只接受规范十进制，不接受空白、小数、指数、十六进制和超出安全整数范围的内容。
 - 本地记录沿用 `todo-v2`。恢复前校验全部记录与编号唯一性，任何非法记录都会导致整批恢复失败并显示提示。
 - 待办文本通过 `textContent` 显示。存储失败会明确提示刷新后可能丢失更改。
-- 直接打开文件时，本地存储是否可用由浏览器策略决定；如需稳定的同源存储，可通过现有静态服务器打开页面。
+- 本地存储按浏览器来源隔离；原先直接打开文件的记录与 Vite 本地地址的记录分别保存。同一来源中的记录格式继续兼容，切换端口也会改变来源。
 
 ## 验证状态
 
-已交付 TypeScript 重构、基础单测和 AI 测试审查，静态类型检查通过。代理未执行测试或浏览器功能验证；按项目约定，实际通过情况以用户手动运行结果为准。
+工程检查结果与双视角审查记录保存在相邻 `e10/` 的实验完成文档。类型检查、ESLint、格式检查和构建分别验证工程约束；测试通过情况以用户手动执行结果为准。

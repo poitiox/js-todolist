@@ -48,7 +48,8 @@ function initTodoApp(): void {
       feedback.textContent = "待办事项已保存。";
     } catch (error: unknown) {
       console.error("待办事项保存失败：", error);
-      feedback.textContent = "本地保存失败，当前更改仅在本页面有效，刷新后可能丢失。";
+      feedback.textContent =
+        "本地保存失败，当前更改仅在本页面有效，刷新后可能丢失。";
     }
   }
 
@@ -64,7 +65,8 @@ function initTodoApp(): void {
       return restored;
     } catch (error: unknown) {
       console.error("待办事项恢复失败：", error);
-      feedback.textContent = "本地记录无法恢复，暂以空列表开始；后续保存会写入新的记录。";
+      feedback.textContent =
+        "本地记录无法恢复，暂以空列表开始；后续保存会写入新的记录。";
       return [];
     }
   }
@@ -98,15 +100,17 @@ function initTodoApp(): void {
     }
 
     todos = todos.map((todo) =>
-      todo.id === id ? { ...todo, text: content } : todo
+      todo.id === id ? { ...todo, text: content } : todo,
     );
     saveAndRender();
   }
 
   function render(): void {
     todoFilter.value = filter;
-    const visibleTodos = todos.filter((todo) =>
-      filter === "all" || (filter === "completed" ? todo.completed : !todo.completed)
+    const visibleTodos = todos.filter(
+      (todo) =>
+        filter === "all" ||
+        (filter === "completed" ? todo.completed : !todo.completed),
     );
     todoList.replaceChildren();
 
@@ -142,9 +146,8 @@ function initTodoApp(): void {
 
     if (visibleTodos.length === 0) {
       const emptyItem = document.createElement("li");
-      emptyItem.textContent = filter === "all"
-        ? "暂无待办事项。"
-        : "当前筛选下暂无待办事项。";
+      emptyItem.textContent =
+        filter === "all" ? "暂无待办事项。" : "当前筛选下暂无待办事项。";
       todoList.append(emptyItem);
     }
   }
@@ -188,7 +191,8 @@ function initTodoApp(): void {
 
   todoFilter.addEventListener("change", () => {
     const selected = todoFilter.value;
-    filter = selected === "active" || selected === "completed" ? selected : "all";
+    filter =
+      selected === "active" || selected === "completed" ? selected : "all";
     render();
   });
 
