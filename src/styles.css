@@ -1,0 +1,96 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #20242a;
+  background: #f5f6f8;
+}
+
+body {
+  margin: 0;
+  padding: 24px 16px;
+}
+
+main {
+  max-width: 640px;
+  margin: auto;
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+select {
+  padding: 8px 12px;
+}
+button {
+  cursor: pointer;
+}
+label {
+  display: block;
+}
+.form-controls,
+.toolbar,
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+.form-controls {
+  margin-top: 8px;
+}
+.form-controls input {
+  min-width: 0;
+  flex: 1;
+  padding: 8px;
+}
+.toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+}
+#todo-feedback {
+  min-height: 1.5em;
+  color: #42536b;
+  overflow-wrap: anywhere;
+}
+#todo-list {
+  padding: 0;
+  list-style: none;
+}
+#todo-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e3e6eb;
+  flex-wrap: wrap;
+}
+#todo-list li > span,
+#todo-list li > s {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.item-actions {
+  margin-left: auto;
+}
+
+.edit-form {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edit-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+}
+@media (max-width: 400px) {
+  main {
+    padding: 16px;
+  }
+}

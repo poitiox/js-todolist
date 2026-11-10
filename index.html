@@ -3,31 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Todo V3.0 · 待办列表</title>
+    <title>Todo V4.0 · 待办列表</title>
   </head>
   <body>
-    <main>
-      <h1>待办列表</h1>
-      <form id="todo-form">
-        <label for="todo-input">待办事项</label>
-        <input
-          id="todo-input"
-          type="text"
-          autocomplete="off"
-          aria-describedby="todo-feedback"
-        />
-        <button type="submit">添加</button>
-      </form>
-      <p id="todo-feedback" role="status"></p>
-      <label for="todo-filter">筛选任务</label>
-      <select id="todo-filter">
-        <option value="all">全部</option>
-        <option value="active">未完成</option>
-        <option value="completed">已完成</option>
-      </select>
-      <button id="clear-completed" type="button">清除已完成</button>
-      <ul id="todo-list"></ul>
-    </main>
+    <div id="root"></div>
     <script type="module" src="/src/todo.ts"></script>
   </body>
 </html>
