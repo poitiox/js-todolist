@@ -1,6 +1,6 @@
-# V3.0 待办列表
+# V4.0 待办列表
 
-保留原有新增、编辑、删除、完成切换、筛选、清除已完成和本地保存功能。使用 Vite 加载 TypeScript 模块，并通过 ESLint、Prettier 和严格类型检查约束工程质量。
+使用 React 19.3.1 和 TypeScript，保留新增、编辑、删除、完成切换、筛选、清除已完成和本地保存功能。Vite 提供开发与构建，ESLint、Prettier 和严格类型检查约束工程质量。
 
 ## 开发方式
 
@@ -21,9 +21,9 @@ npm run build
 npm run preview
 ```
 
-`index.html` 通过模块脚本加载 `src/todo.ts`。构建脚本固定为 `tsc --noEmit && vite build`，输出至 `dist/`；通过预览地址检查生产构建，不直接修改产物。当前没有额外配置需求，使用 Vite 默认配置。
+`index.html` 通过模块脚本加载 `src/todo.ts`，该入口只定位根容器并在 StrictMode 下挂载 React。TSX 使用 react-jsx 自动转换，无需额外的 Vite 插件。构建脚本固定为 `tsc --noEmit && vite build`，输出至 `dist/`，不提交生成产物。
 
-ESLint 10 通过 `eslint.config.cjs` 的 FlatCompat 读取课程指定的 `.eslintrc.cjs`，规则只维护一份。复杂度上限为 10，嵌套深度上限为 3，显式 `any` 为错误；三项均设为错误，`npm run lint` 另禁止告警。`npx eslint src/` 会扫描全部 TypeScript 业务源码。
+ESLint 10 通过 `eslint.config.cjs` 的 FlatCompat 读取课程指定的 `.eslintrc.cjs`，规则只维护一份。复杂度上限为 10，嵌套深度上限为 3，显式 `any` 为错误；三项均设为错误，`npm run lint` 另禁止告警。扫描范围同时覆盖 TS 和 TSX 业务源码。
 
 使用 `npm run format` 统一格式。Prettier 保留两空格、双引号、分号，格式检查不扫描生成文件。TypeScript 固定为 6.0.3，以满足当前 TypeScript ESLint 解析器的支持范围；`strict` 及全部原有严格选项保留。
 
@@ -37,17 +37,21 @@ npm run test
 
 基础测试直接调用真实业务函数，覆盖新增、首尾空白、连续编号、空白及非字符串输入、双向完成切换、连续切换、无对应任务和非法编号。成功操作同时检查原数据未被修改，失败操作检查列表内容与引用均不改变，不需要浏览器或存储 mock。
 
-边界测试补充编号上限与回绕、规范十进制转换、恢复数据结构和编号重复；页面测试使用实际 HTML 与 jsdom，覆盖必需元素缺失、存储读写异常、标签文本渲染和嵌套按钮点击。只对外部依赖异常使用 spy，每例还原；AI 初稿与详细审查单独保存在相邻 `e9/AI测试审查.md`，不参与正式测试。
-
 `npm run typecheck` 分别检查浏览器源码与测试源码，避免给页面代码引入 Node.js 全局类型。它只做静态检查，不会执行测试；类型检查通过不代表测试已经通过。
 
 ## 文件职责
 
 | 文件                                | 职责                                         |
 | ----------------------------------- | -------------------------------------------- |
-| `index.html`                        | 页面结构和浏览器入口                         |
+| `index.html`                        | React 根容器和浏览器入口                     |
 | `src/todo-model.ts`                 | 待办类型、新增、完成切换、编号与恢复数据校验 |
-| `src/todo.ts`                       | 页面事件、渲染和 localStorage 读写           |
+| `src/todo.ts`                       | StrictMode 与 React 根挂载                   |
+| `src/components/todo-app.tsx`       | 列表状态、业务事件、筛选和存储同步           |
+| `src/components/todo-form.tsx`      | 受控输入、提交及输入焦点                     |
+| `src/components/todo-list.tsx`      | 列表组合与空状态                             |
+| `src/components/todo-item.tsx`      | 单条待办展示与事件回调                       |
+| `src/todo-storage.ts`               | todo-v2 读写与异常反馈                       |
+| `src/styles.css`                    | 基础布局与窄屏适配                           |
 | `tests/todo-model.basic.test.ts`    | 新增与完成切换的基础单测                     |
 | `tests/todo-model.boundary.test.ts` | 编号、恢复数据和重复记录的边界单测           |
 | `tests/todo-app.test.ts`            | 实际页面结构、存储异常与文本渲染回归         |
@@ -57,17 +61,3 @@ npm run test
 | `.eslintrc.cjs`                     | 课程要求的三条代码规则                       |
 | `eslint.config.cjs`                 | 当前 ESLint 的旧配置兼容入口                 |
 | `.prettierrc.json`                  | 统一格式规则                                 |
-
-## 业务约束
-
-- 新增内容必须是非空字符串，保存前去除首尾空白；不合法的输入不改变列表。
-- 任务编号是正的安全整数；找不到编号时不切换任何任务。
-- 编号从当前最大值递增，达到安全整数上限后回绕并避开已有编号。不保证已删除编号永久不复用。
-- 页面编号只接受规范十进制，不接受空白、小数、指数、十六进制和超出安全整数范围的内容。
-- 本地记录沿用 `todo-v2`。恢复前校验全部记录与编号唯一性，任何非法记录都会导致整批恢复失败并显示提示。
-- 待办文本通过 `textContent` 显示。存储失败会明确提示刷新后可能丢失更改。
-- 本地存储按浏览器来源隔离；原先直接打开文件的记录与 Vite 本地地址的记录分别保存。同一来源中的记录格式继续兼容，切换端口也会改变来源。
-
-## 验证状态
-
-工程检查结果与双视角审查记录保存在相邻 `e10/` 的实验完成文档。类型检查、ESLint、格式检查和构建分别验证工程约束；测试通过情况以用户手动执行结果为准。
