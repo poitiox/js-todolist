@@ -1,17 +1,19 @@
-# V4.0 待办列表
+# V4.0 Todo List
 
-使用 React 19.3.1 和 TypeScript，保留新增、编辑、删除、完成切换、筛选、清除已完成和本地保存功能。Vite 提供开发与构建，ESLint、Prettier 和严格类型检查约束工程质量。
+A React 19.3.1 and TypeScript todo application with task creation, editing, deletion, completion toggling, filtering, completed-task cleanup, local persistence, and light/dark themes. Vite handles development and production builds; strict TypeScript checks, ESLint, and Prettier enforce code quality.
 
-## 开发方式
+## Development
 
-开发环境使用 Node.js 22.22.2 以上的 22 版本、24.15 以上的 24 版本或 26 及以上版本，以 `package.json` 为准。
+Use Node.js `^22.22.2 || ^24.15.0 || >=26.0.0`, as specified in `package.json`.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-通过终端显示的本地地址访问页面。检查与生产构建：
+Open the local URL printed by Vite. Use the development server or production preview so that module loading works correctly. Browser storage belongs to the current origin; changing the host or port opens a different storage area.
+
+## Checks and Production Build
 
 ```sh
 npm run typecheck
@@ -21,51 +23,73 @@ npm run build
 npm run preview
 ```
 
-`index.html` 通过模块脚本加载 `src/todo.ts`，该入口只定位根容器并在 StrictMode 下挂载 React。TSX 使用 react-jsx 自动转换，无需额外的 Vite 插件。构建脚本固定为 `tsc --noEmit && vite build`，输出至 `dist/`，不提交生成产物。
+`index.html` loads `src/todo.ts`, which locates the root container and mounts React in StrictMode. TSX uses the automatic `react-jsx` transform without an additional Vite plugin. The build command is `tsc --noEmit && vite build`; generated files go to `dist/` and are excluded from version control.
 
-ESLint 10 通过 `eslint.config.cjs` 的 FlatCompat 读取课程指定的 `.eslintrc.cjs`，规则只维护一份。复杂度上限为 10，嵌套深度上限为 3，显式 `any` 为错误；三项均设为错误，`npm run lint` 另禁止告警。扫描范围同时覆盖 TS 和 TSX 业务源码。
+ESLint 10 uses FlatCompat in `eslint.config.cjs` to load the course-required `.eslintrc.cjs`, keeping one rule definition. Complexity is limited to 10, nesting depth to 3, and explicit `any` is prohibited. These rules report errors, and `npm run lint` also rejects warnings. Both TS and TSX application files are checked.
 
-使用 `npm run format` 统一格式。Prettier 保留两空格、双引号、分号，格式检查不扫描生成文件。TypeScript 固定为 6.0.3，以满足当前 TypeScript ESLint 解析器的支持范围；`strict` 及全部原有严格选项保留。
+Run `npm run format` to apply two-space indentation, double quotes, semicolons, and LF line endings. Formatting checks exclude generated output. TypeScript is pinned to 6.0.3 for compatibility with the installed TypeScript ESLint parser; `strict` and the existing strict compiler options remain enabled.
 
-## Theme Context (Week 12)
+## Theme Context
 
-`ThemeProvider` owns the `light` / `dark` state and exposes `theme` and `setTheme` through `ThemeContext`. Both the page container and `ThemeToggle` consume it through `useTheme()`. The button switches the page, native controls, feedback, and keyboard focus colors together. Theme changes preserve tasks, the current filter, and unsaved input; the default theme after reloading is light.
+`ThemeProvider` owns the light/dark theme and exposes the current theme and its state setter through `ThemeContext`. The page container and `ThemeToggle` both consume this Context through `useTheme()`. Calling the Hook outside its Provider throws a clear error.
 
-The theme regression in `tests/todo-app.test.ts` checks both consumers and verifies that switching themes preserves a task, an input draft, and saved todo data. Run it manually with the full suite below.
+The theme button updates the page background, content surface, native controls, feedback, and keyboard focus colors. Its accessible name is stable, and its pressed state indicates whether dark mode is active. Switching themes preserves tasks, the active filter, and unsaved input. Theme selection is kept in memory; reloading starts with the light theme.
 
-## 手动执行测试
+## Local Persistence
+
+The primary storage key is `todo-v2`. If that key is absent, the application reads the course template's `todos` key. An existing primary value always takes precedence, including an empty array. Invalid primary data produces recovery feedback instead of silently loading a different snapshot.
+
+Task state is restored through a lazy state initializer. Reading catches storage-access and JSON errors, then delegates array and record validation to `parseTodos`. Restored records require a positive safe-integer ID, nonblank text, a Boolean completion state, and unique IDs. Additional fields are discarded.
+
+A single Effect writes to the primary key after the user changes the task list. Its dependencies are the task list and change flag. Initial mounting, filtering, theme changes, and invalid input do not write to storage. Updating save feedback does not trigger another write. If the course template's fallback key was used, the first task change creates the primary record and preserves the fallback record.
+
+StrictMode may invoke initializers and Effects again during development. Initialization only reads storage, and the change flag prevents initial writes, so repeated mounting does not replace saved tasks with an empty list. This synchronous storage Effect creates no subscriptions, timers, or asynchronous work that require cleanup. Saving catches storage errors and shows feedback while keeping the current tasks visible.
+
+To check the course fixture manually, use a fresh browser profile or private window at the application's URL. In DevTools, open Application > Local Storage and add `todos` with this value while leaving `todo-v2` absent:
+
+```json
+[{ "id": 1, "text": "Test task", "completed": false }]
+```
+
+Reload and confirm that the task appears and the fixture is unchanged. Toggle its completion state and confirm that `todo-v2` contains the updated task while `todos` retains the original fixture. Reload again and confirm that the updated completion state is restored from the primary key.
+
+See the official React references for [Context](https://react.dev/reference/react/useContext), [lazy state initialization](https://react.dev/reference/react/useState#avoiding-recreating-the-initial-state), and [Effect dependencies and cleanup](https://react.dev/reference/react/useEffect).
+
+## Run Tests Manually
 
 ```sh
 npm run test
 ```
 
-脚本固定为 `vitest run`，一次性运行测试，不进入监听模式。需要逐项输出时执行 `npm run test -- --reporter=verbose`。测试由用户手动执行，阶段完成后自行提交。
+The script runs `vitest run` once without watch mode. Use `npm run test -- --reporter=verbose` for individual results. Tests are run manually by the user; each completed stage is committed by the user before work continues.
 
-基础测试直接调用真实业务函数，覆盖新增、首尾空白、连续编号、空白及非字符串输入、双向完成切换、连续切换、无对应任务和非法编号。成功操作同时检查原数据未被修改，失败操作检查列表内容与引用均不改变，不需要浏览器或存储 mock。
+Business tests call the actual model functions. They cover creation, trimming, sequential IDs, invalid and blank input, completion changes, missing tasks, invalid IDs, safe-integer boundaries, and stored-record validation. Successful operations leave their inputs unchanged; rejected operations preserve both list contents and references.
 
-`npm run typecheck` 分别检查浏览器源码与测试源码，避免给页面代码引入 Node.js 全局类型。它只做静态检查，不会执行测试；类型检查通过不代表测试已经通过。
+Page regressions load the actual HTML in jsdom and mount the application in StrictMode. They cover task interactions, safe text rendering, storage failures, restoration after remounting, theme changes, primary/fallback storage precedence, invalid JSON, non-array data, and preservation of saved records during initial mounting. Only external browser storage is spied on where needed.
 
-## 文件职责
+`npm run typecheck` checks application and test sources separately, keeping Node.js globals out of browser code. It does not execute tests; passing type checks does not establish that the test suite passes.
 
-| 文件                                | 职责                                         |
-| ----------------------------------- | -------------------------------------------- |
-| `index.html`                        | React 根容器和浏览器入口                     |
-| `src/todo-model.ts`                 | 待办类型、新增、完成切换、编号与恢复数据校验 |
-| `src/todo.ts`                       | StrictMode 与 React 根挂载                   |
-| `src/components/todo-app.tsx`       | 列表状态、业务事件、筛选和存储同步           |
-| `src/components/todo-form.tsx`      | 受控输入、提交及输入焦点                     |
-| `src/components/todo-list.tsx`      | 列表组合与空状态                             |
-| `src/components/todo-item.tsx`      | 单条待办展示与事件回调                       |
-| `src/todo-storage.ts`               | todo-v2 读写与异常反馈                       |
-| `src/theme-context.tsx`             | Shared theme state, Provider, and `useTheme` |
-| `src/components/theme-toggle.tsx`   | Accessible light/dark theme toggle           |
-| `src/styles.css`                    | 基础布局与窄屏适配                           |
-| `tests/todo-model.basic.test.ts`    | 新增与完成切换的基础单测                     |
-| `tests/todo-model.boundary.test.ts` | 编号、恢复数据和重复记录的边界单测           |
-| `tests/todo-app.test.ts`            | 实际页面结构、存储异常与文本渲染回归         |
-| `dist/`                             | Vite 生成的生产页面与资源，不提交            |
-| `tsconfig.json`                     | 严格类型检查配置                             |
-| `tsconfig.test.json`                | 测试源码的类型检查配置                       |
-| `.eslintrc.cjs`                     | 课程要求的三条代码规则                       |
-| `eslint.config.cjs`                 | 当前 ESLint 的旧配置兼容入口                 |
-| `.prettierrc.json`                  | 统一格式规则                                 |
+## File Responsibilities
+
+| File                                | Responsibility                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| `index.html`                        | React root container and browser entry                                        |
+| `src/todo-model.ts`                 | Todo types, creation, completion changes, IDs, and restored-record validation |
+| `src/todo.ts`                       | StrictMode setup and React root mounting                                      |
+| `src/components/todo-app.tsx`       | Task state, business events, filtering, and persistence coordination          |
+| `src/components/todo-form.tsx`      | Controlled input, submission, and input focus                                 |
+| `src/components/todo-list.tsx`      | List composition and empty states                                             |
+| `src/components/todo-item.tsx`      | Individual task display, editing, and callbacks                               |
+| `src/todo-storage.ts`               | Primary/fallback storage reads, primary-key writes, and failure feedback      |
+| `src/theme-context.tsx`             | Shared theme state, Provider, and `useTheme`                                  |
+| `src/components/theme-toggle.tsx`   | Accessible light/dark theme toggle                                            |
+| `src/styles.css`                    | Layout, theme colors, focus indicators, and narrow-screen styles              |
+| `tests/todo-model.basic.test.ts`    | Basic creation and completion tests                                           |
+| `tests/todo-model.boundary.test.ts` | ID boundaries and stored-record validation tests                              |
+| `tests/todo-app.test.ts`            | Page interactions, themes, persistence, and safe text rendering               |
+| `dist/`                             | Generated production output; excluded from version control                    |
+| `tsconfig.json`                     | Strict browser-source type checking                                           |
+| `tsconfig.test.json`                | Test-source type checking                                                     |
+| `.eslintrc.cjs`                     | Course-required code quality rules                                            |
+| `eslint.config.cjs`                 | Compatibility entry for the current ESLint version                            |
+| `.prettierrc.json`                  | Formatting configuration                                                      |

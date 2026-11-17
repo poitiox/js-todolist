@@ -5,7 +5,8 @@ const storageKey = "todo-v2";
 
 export function loadTodos(): { todos: readonly Todo[]; feedback: string } {
   try {
-    const saved = localStorage.getItem(storageKey);
+    const saved =
+      localStorage.getItem(storageKey) ?? localStorage.getItem("todos");
     if (saved === null) return { todos: [], feedback: "" };
     const parsed: unknown = JSON.parse(saved);
     const todos = parseTodos(parsed);

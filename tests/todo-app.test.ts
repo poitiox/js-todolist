@@ -232,8 +232,77 @@ describe("React 页面状态与业务交互", () => {
 });
 
 describe("React 页面存储与文本安全", () => {
+  it("restores existing tasks without any initial write in StrictMode", async () => {
+    const saved = '[{"id":1,"text":"Existing task","completed":false}]';
+    localStorage.setItem("todo-v2", saved);
+    const write = vi.spyOn(Storage.prototype, "setItem");
+
+    await mountApp();
+
+    expect(document.querySelector('[data-id="1"] > span')?.textContent).toBe(
+      "Existing task",
+    );
+    expect(localStorage.getItem("todo-v2")).toBe(saved);
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it("restores the course fixture and saves subsequent edits to the primary key", async () => {
+    const saved = '[{"id":1,"text":"Test task","completed":false}]';
+    localStorage.setItem("todos", saved);
+
+    await mountApp();
+
+    expect(document.querySelector('[data-id="1"] > span')?.textContent).toBe(
+      "Test task",
+    );
+    expect(localStorage.getItem("todos")).toBe(saved);
+    expect(localStorage.getItem("todo-v2")).toBeNull();
+
+    await click('[data-id="1"] input');
+    expect(localStorage.getItem("todo-v2")).toBe(
+      '[{"id":1,"text":"Test task","completed":true}]',
+    );
+    expect(localStorage.getItem("todos")).toBe(saved);
+
+    await act(async () => root?.unmount());
+    root = undefined;
+    await mountApp();
+    expect(element('[data-id="1"] input', HTMLInputElement).checked).toBe(true);
+    expect(document.querySelector('[data-id="1"] s')?.textContent).toBe(
+      "Test task",
+    );
+  });
+
+  it.each([
+    {
+      name: "a populated primary list",
+      saved: '[{"id":1,"text":"Current task","completed":false}]',
+      count: 1,
+    },
+    { name: "an empty primary list", saved: "[]", count: 0 },
+    { name: "an empty primary value", saved: "", count: 0 },
+    { name: "invalid primary data", saved: "{", count: 0 },
+  ])(
+    "preserves $name instead of restoring fallback data",
+    async ({ saved, count }) => {
+      const fallback = '[{"id":99,"text":"Fallback task","completed":false}]';
+      localStorage.setItem("todo-v2", saved);
+      localStorage.setItem("todos", fallback);
+
+      await mountApp();
+
+      expect(document.querySelectorAll("li[data-id]")).toHaveLength(count);
+      expect(document.querySelector('[data-id="99"]')).toBeNull();
+      expect(localStorage.getItem("todo-v2")).toBe(saved);
+      expect(localStorage.getItem("todos")).toBe(fallback);
+    },
+  );
+
   it.each([
     { name: "JSON语法错误", saved: "{" },
+    { name: "non-array object", saved: "{}" },
+    { name: "null", saved: "null" },
+    { name: "non-array string", saved: '"not an array"' },
     {
       name: "非法字段",
       saved: '[{"id":1,"text":"脏数据","completed":"false"}]',
@@ -253,6 +322,22 @@ describe("React 页面存储与文本安全", () => {
       );
       expect(document.querySelectorAll("li[data-id]")).toHaveLength(0);
       expect(localStorage.getItem("todo-v2")).toBe(saved);
+    },
+  );
+
+  it.each(["{", "{}", "null"])(
+    "rejects invalid fallback data %s without writing either key",
+    async (saved) => {
+      localStorage.setItem("todos", saved);
+
+      await mountApp();
+
+      expect(element("#todo-feedback", HTMLElement).textContent).toContain(
+        "本地记录无法恢复",
+      );
+      expect(document.querySelectorAll("li[data-id]")).toHaveLength(0);
+      expect(localStorage.getItem("todos")).toBe(saved);
+      expect(localStorage.getItem("todo-v2")).toBeNull();
     },
   );
 
