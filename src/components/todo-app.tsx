@@ -2,12 +2,23 @@ import { useEffect, useState } from "react";
 import { addTodo, toggleTodo } from "../todo-model";
 import type { Todo } from "../todo-model";
 import { loadTodos, saveTodos } from "../todo-storage";
+import { ThemeProvider, useTheme } from "../theme-context";
+import { ThemeToggle } from "./theme-toggle";
 import { TodoForm } from "./todo-form";
 import { TodoList } from "./todo-list";
 
 type TodoFilter = "all" | "active" | "completed";
 
 export function TodoApp() {
+  return (
+    <ThemeProvider>
+      <TodoAppContent />
+    </ThemeProvider>
+  );
+}
+
+function TodoAppContent() {
+  const { theme } = useTheme();
   const [state, setState] = useState(() => ({
     ...loadTodos(),
     hasChanges: false,
@@ -68,51 +79,58 @@ export function TodoApp() {
   );
 
   return (
-    <main>
-      <h1>待办列表</h1>
-      <TodoForm onAdd={handleAdd} />
-      <p id="todo-feedback" role="status">
-        {feedback}
-      </p>
-      <div className="toolbar">
-        <label htmlFor="todo-filter">筛选任务</label>
-        <select
-          id="todo-filter"
-          value={filter}
-          onChange={(event) => {
-            const selected = event.target.value;
-            setFilter(
-              selected === "active" || selected === "completed"
-                ? selected
-                : "all",
-            );
-          }}
-        >
-          <option value="all">全部</option>
-          <option value="active">未完成</option>
-          <option value="completed">已完成</option>
-        </select>
-        <button
-          id="clear-completed"
-          type="button"
-          onClick={() =>
-            updateTodos((current) => current.filter((todo) => !todo.completed))
+    <div className="app-theme" data-theme={theme}>
+      <main>
+        <header className="app-header">
+          <h1>待办列表</h1>
+          <ThemeToggle />
+        </header>
+        <TodoForm onAdd={handleAdd} />
+        <p id="todo-feedback" role="status">
+          {feedback}
+        </p>
+        <div className="toolbar">
+          <label htmlFor="todo-filter">筛选任务</label>
+          <select
+            id="todo-filter"
+            value={filter}
+            onChange={(event) => {
+              const selected = event.target.value;
+              setFilter(
+                selected === "active" || selected === "completed"
+                  ? selected
+                  : "all",
+              );
+            }}
+          >
+            <option value="all">全部</option>
+            <option value="active">未完成</option>
+            <option value="completed">已完成</option>
+          </select>
+          <button
+            id="clear-completed"
+            type="button"
+            onClick={() =>
+              updateTodos((current) =>
+                current.filter((todo) => !todo.completed),
+              )
+            }
+          >
+            清除已完成
+          </button>
+        </div>
+        <TodoList
+          todos={visibleTodos}
+          emptyMessage={
+            filter === "all" ? "暂无待办事项。" : "当前筛选下暂无待办事项。"
           }
-        >
-          清除已完成
-        </button>
-      </div>
-      <TodoList
-        todos={visibleTodos}
-        emptyMessage={
-          filter === "all" ? "暂无待办事项。" : "当前筛选下暂无待办事项。"
-        }
-        onToggle={(id) => updateTodos((current) => toggleTodo(current, id))}
-        onEdit={handleEdit}
-        onDelete={(id) =>
-          updateTodos((current) => current.filter((todo) => todo.id !== id))
-        }
-      />
-    </main>
+          onToggle={(id) => updateTodos((current) => toggleTodo(current, id))}
+          onEdit={handleEdit}
+          onDelete={(id) =>
+            updateTodos((current) => current.filter((todo) => todo.id !== id))
+          }
+        />
+      </main>
+    </div>
   );
 }

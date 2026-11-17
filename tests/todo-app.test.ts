@@ -79,6 +79,35 @@ async function selectFilter(value: string): Promise<void> {
 }
 
 describe("React 页面状态与业务交互", () => {
+  it("switches both theme consumers without losing tasks or an input draft", async () => {
+    await mountApp();
+    const page = element(".app-theme", HTMLElement);
+    const toggle = element("#theme-toggle", HTMLButtonElement);
+    expect(page.dataset.theme).toBe("light");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+
+    await submitTodo("保留的任务");
+    await selectFilter("active");
+    await fillInput("#todo-input", "未提交的草稿");
+    const saved = localStorage.getItem("todo-v2");
+    await click("#theme-toggle");
+
+    expect(page.dataset.theme).toBe("dark");
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(toggle.textContent).toContain("切换到浅色");
+    expect(document.querySelector('[data-id="1"]')?.textContent).toContain(
+      "保留的任务",
+    );
+    expect(element("#todo-input", HTMLInputElement).value).toBe("未提交的草稿");
+    expect(element("#todo-filter", HTMLSelectElement).value).toBe("active");
+    expect(localStorage.getItem("todo-v2")).toBe(saved);
+
+    await click("#theme-toggle");
+    expect(page.dataset.theme).toBe("light");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    expect(toggle.textContent).toContain("切换到深色");
+  });
+
   it("从实际 HTML 挂载，新增后同步列表和存储并清空输入", async () => {
     await mountApp();
     await submitTodo("  任务A  ");

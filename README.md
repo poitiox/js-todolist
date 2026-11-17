@@ -27,6 +27,12 @@ ESLint 10 通过 `eslint.config.cjs` 的 FlatCompat 读取课程指定的 `.esli
 
 使用 `npm run format` 统一格式。Prettier 保留两空格、双引号、分号，格式检查不扫描生成文件。TypeScript 固定为 6.0.3，以满足当前 TypeScript ESLint 解析器的支持范围；`strict` 及全部原有严格选项保留。
 
+## Theme Context (Week 12)
+
+`ThemeProvider` owns the `light` / `dark` state and exposes `theme` and `setTheme` through `ThemeContext`. Both the page container and `ThemeToggle` consume it through `useTheme()`. The button switches the page, native controls, feedback, and keyboard focus colors together. Theme changes preserve tasks, the current filter, and unsaved input; the default theme after reloading is light.
+
+The theme regression in `tests/todo-app.test.ts` checks both consumers and verifies that switching themes preserves a task, an input draft, and saved todo data. Run it manually with the full suite below.
+
 ## 手动执行测试
 
 ```sh
@@ -51,6 +57,8 @@ npm run test
 | `src/components/todo-list.tsx`      | 列表组合与空状态                             |
 | `src/components/todo-item.tsx`      | 单条待办展示与事件回调                       |
 | `src/todo-storage.ts`               | todo-v2 读写与异常反馈                       |
+| `src/theme-context.tsx`             | Shared theme state, Provider, and `useTheme` |
+| `src/components/theme-toggle.tsx`   | Accessible light/dark theme toggle           |
 | `src/styles.css`                    | 基础布局与窄屏适配                           |
 | `tests/todo-model.basic.test.ts`    | 新增与完成切换的基础单测                     |
 | `tests/todo-model.boundary.test.ts` | 编号、恢复数据和重复记录的边界单测           |
